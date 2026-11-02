@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icons } from "./icons";
 
 const navigation = [
@@ -20,13 +20,78 @@ const navigation = [
   { label: "Settings", href: "/settings", icon: Icons.settings },
 ];
 
+const notifications = [
+  {
+    id: "n1",
+    title: "12 orders need attention",
+    body: "Delayed handoffs across Central City zones",
+    time: "2 min ago",
+    tone: "orange" as const,
+    href: "/orders",
+    icon: Icons.orders,
+  },
+  {
+    id: "n2",
+    title: "Support ticket escalated",
+    body: "Customer refund request · #SUP-1842",
+    time: "8 min ago",
+    tone: "orange" as const,
+    href: "/support",
+    icon: Icons.support,
+  },
+  {
+    id: "n3",
+    title: "Rider capacity low",
+    body: "North zone has 3 available riders",
+    time: "14 min ago",
+    tone: "lime" as const,
+    href: "/riders",
+    icon: Icons.riders,
+  },
+  {
+    id: "n4",
+    title: "Restaurant went offline",
+    body: "Olive & Thyme paused accepting orders",
+    time: "21 min ago",
+    tone: "lime" as const,
+    href: "/restaurants",
+    icon: Icons.restaurants,
+  },
+];
+
+type HeaderMenu = "notifications" | "profile" | null;
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [headerMenu, setHeaderMenu] = useState<HeaderMenu>(null);
+  const headerMenusRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setHeaderMenu(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!headerMenusRef.current?.contains(event.target as Node)) {
+        setHeaderMenu(null);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setHeaderMenu(null);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   if (pathname === "/login") return <>{children}</>;
 
   const current = navigation.find((item) => item.href === pathname);
+  const unreadCount = notifications.length;
 
   return (
     <div className="min-h-screen bg-background text-ink">
@@ -177,7 +242,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <p className="mt-0.5 text-[14px] font-bold text-ink">{current?.label ?? "Admin workspace"}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div ref={headerMenusRef} className="flex items-center gap-2 sm:gap-3">
             <div className="hidden h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-[12px] text-muted md:flex">
               <Icons.search size={15} />
               <span>Search anything</span>
@@ -185,13 +250,167 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 ⌘K
               </kbd>
             </div>
-            <button
-              aria-label="Notifications"
-              className="relative grid size-10 place-items-center rounded-xl border border-line text-ink transition hover:bg-surface"
-            >
-              <Icons.bell size={17} />
-              <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-orange" />
-            </button>
+
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={headerMenu === "notifications"}
+                aria-haspopup="dialog"
+                onClick={() => setHeaderMenu((currentMenu) => (currentMenu === "notifications" ? null : "notifications"))}
+                className={`relative grid size-10 place-items-center rounded-xl border text-ink transition ${
+                  headerMenu === "notifications" ? "border-ink bg-surface" : "border-line hover:bg-surface"
+                }`}
+              >
+                <Icons.bell size={17} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-orange px-1 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                ) : null}
+              </button>
+
+              {headerMenu === "notifications" ? (
+                <div
+                  role="dialog"
+                  aria-label="Notifications"
+                  className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-card shadow-[0_24px_60px_rgba(17,17,17,0.14)] animate-fade-up"
+                >
+                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                    <div>
+                      <p className="text-[13px] font-bold text-ink">Notifications</p>
+                      <p className="mt-0.5 text-[11px] text-muted">{unreadCount} items need review</p>
+                    </div>
+                    <Link
+                      href="/orders"
+                      onClick={() => setHeaderMenu(null)}
+                      className="text-[11px] font-bold text-ink hover:underline"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  <div className="max-h-[22rem] overflow-y-auto">
+                    {notifications.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          onClick={() => setHeaderMenu(null)}
+                          className="flex gap-3 border-b border-line px-4 py-3 transition last:border-b-0 hover:bg-surface"
+                        >
+                          <span
+                            className={`mt-1 grid size-8 shrink-0 place-items-center rounded-xl ${
+                              item.tone === "orange" ? "bg-[#fff1e9] text-orange" : "bg-lime-soft text-ink"
+                            }`}
+                          >
+                            <Icon size={14} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-start justify-between gap-3">
+                              <span className="text-[12px] font-bold text-ink">{item.title}</span>
+                              <span className="shrink-0 text-[10px] text-soft">{item.time}</span>
+                            </span>
+                            <span className="mt-1 block truncate text-[11px] text-muted">{item.body}</span>
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Profile */}
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Open profile menu"
+                aria-expanded={headerMenu === "profile"}
+                aria-haspopup="menu"
+                onClick={() => setHeaderMenu((currentMenu) => (currentMenu === "profile" ? null : "profile"))}
+                className={`flex items-center gap-2 rounded-xl border px-1.5 py-1.5 transition sm:pr-2.5 ${
+                  headerMenu === "profile" ? "border-ink bg-surface" : "border-line hover:bg-surface"
+                }`}
+              >
+                <span className="grid size-8 place-items-center rounded-full bg-ink text-[11px] font-bold text-lime">
+                  AM
+                </span>
+                <span className="hidden min-w-0 text-left sm:block">
+                  <span className="block truncate text-[12px] font-bold text-ink">Alex Morgan</span>
+                  <span className="block text-[10px] text-muted">Super admin</span>
+                </span>
+                <Icons.chevron
+                  size={14}
+                  className={`hidden text-muted transition sm:block ${headerMenu === "profile" ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {headerMenu === "profile" ? (
+                <div
+                  role="menu"
+                  aria-label="Profile menu"
+                  className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-card shadow-[0_24px_60px_rgba(17,17,17,0.14)] animate-fade-up"
+                >
+                  <div className="border-b border-line px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-10 place-items-center rounded-full bg-ink text-[12px] font-bold text-lime">
+                        AM
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-bold text-ink">Alex Morgan</p>
+                        <p className="mt-0.5 truncate text-[11px] text-muted">alex@crave.app</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 rounded-xl bg-surface px-3 py-2 text-[11px] text-muted">
+                      Crave · Platform super admin
+                    </p>
+                  </div>
+
+                  <div className="p-2">
+                    {[
+                      { href: "/settings", label: "Account settings", icon: Icons.settings },
+                      { href: "/support", label: "Support inbox", icon: Icons.support },
+                      { href: "/payouts", label: "Payouts", icon: Icons.payouts },
+                      { href: "/live-map", label: "Live operations", icon: Icons.map },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          role="menuitem"
+                          onClick={() => setHeaderMenu(null)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-ink transition hover:bg-surface"
+                        >
+                          <span className="grid size-7 place-items-center rounded-lg bg-surface text-muted">
+                            <Icon size={14} />
+                          </span>
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  <div className="border-t border-line p-2">
+                    <Link
+                      href="/login"
+                      role="menuitem"
+                      onClick={() => setHeaderMenu(null)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-red transition hover:bg-[#fff0ed]"
+                    >
+                      <span className="grid size-7 place-items-center rounded-lg bg-[#fff0ed] text-red">
+                        <Icons.logout size={14} />
+                      </span>
+                      Sign out
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
             <div className="hidden h-9 items-center gap-2 rounded-full bg-ink px-3.5 text-[11px] font-bold text-lime sm:flex">
               <span className="size-1.5 rounded-full bg-lime animate-pulse-dot" />
               Live preview
