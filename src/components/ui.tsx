@@ -128,6 +128,9 @@ const tones: Record<string, string> = {
   Success: "bg-lime-soft text-ink",
   Failed: "bg-[#fcebea] text-[#ad5752]",
   Warning: "bg-[#fff3e6] text-[#a76225]",
+  Verified: "bg-lime-soft text-ink",
+  "Pending review": "bg-[#fff3e6] text-[#a76225]",
+  "Needs resubmit": "bg-[#fcebea] text-[#ad5752]",
 };
 
 export function Badge({ label }: { label: string }) {

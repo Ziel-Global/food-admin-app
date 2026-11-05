@@ -26,12 +26,14 @@ import {
   cityOptions,
   cuisineOptions,
   formatCommission,
+  formatLocation,
   initials,
   loadPartners,
   setPartnerStatus,
   slugify,
   statusOptions,
   upsertPartner,
+  zonesForCity,
   type Partner,
   type PartnerStatus,
 } from "@/lib/restaurants";
@@ -41,6 +43,7 @@ const emptyForm = {
   owner: "",
   cuisine: "",
   city: "",
+  zone: "",
   phone: "",
   email: "",
   address: "",
@@ -72,9 +75,12 @@ export default function RestaurantsPage() {
         row.name.toLowerCase().includes(q) ||
         row.owner.toLowerCase().includes(q) ||
         row.cuisine.toLowerCase().includes(q) ||
-        row.city.toLowerCase().includes(q),
+        row.city.toLowerCase().includes(q) ||
+        row.zone.toLowerCase().includes(q),
     );
   }, [filter, query, rows]);
+
+  const zoneOptions = zonesForCity(form.city);
 
   const activeCount = 84 + rows.filter((r) => r.status === "Active").length;
   const pendingCount = rows.filter((r) => r.status === "Pending").length;
@@ -105,6 +111,7 @@ export default function RestaurantsPage() {
     if (!form.owner.trim()) next.owner = "Owner name is required.";
     if (!form.cuisine) next.cuisine = "Select a cuisine.";
     if (!form.city) next.city = "Select a city.";
+    if (!form.zone) next.zone = "Select a zone / district.";
     if (!form.phone.trim()) next.phone = "Contact phone is required.";
     if (!form.email.trim()) next.email = "Contact email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) next.email = "Enter a valid email.";
@@ -135,6 +142,7 @@ export default function RestaurantsPage() {
         owner: form.owner.trim(),
         cuisine: form.cuisine,
         city: form.city,
+        zone: form.zone,
         status: form.status,
         orders: form.status === "Active" ? "0" : "—",
         rate,
@@ -185,14 +193,14 @@ export default function RestaurantsPage() {
           <SelectPill options={["All", "Pending", "Active", "Paused"]} selected={filter} onSelect={setFilter} />
           <SearchBox placeholder="Search partners…" value={query} onChange={setQuery} />
         </div>
-        <Table headers={["Restaurant", "Cuisine", "City", "Status", "Orders today", "Commission", ""]}>
+        <Table headers={["Restaurant", "Cuisine", "City / zone", "Status", "Orders today", "Commission", ""]}>
           {visible.map((row) => (
             <tr key={row.id} className="transition hover:bg-surface/70">
               <TableCell>
                 <Person initials={initials(row.name)} name={row.name} meta={`Owner · ${row.owner}`} />
               </TableCell>
               <TableCell>{row.cuisine}</TableCell>
-              <TableCell>{row.city}</TableCell>
+              <TableCell>{formatLocation(row.city, row.zone)}</TableCell>
               <TableCell>
                 <Badge label={row.status} />
               </TableCell>
@@ -282,9 +290,22 @@ export default function RestaurantsPage() {
             <Field label="City" required error={errors.city}>
               <SelectField
                 value={form.city}
-                onChange={(value) => setField("city", value)}
+                onChange={(value) => {
+                  const zones = zonesForCity(value);
+                  setForm((current) => ({ ...current, city: value, zone: zones[0]?.value ?? "" }));
+                  setErrors((current) => ({ ...current, city: undefined, zone: undefined }));
+                }}
                 options={cityOptions}
                 placeholder="Select city"
+                required
+              />
+            </Field>
+            <Field label="Zone / district" required error={errors.zone} hint="Sub-area under the selected city">
+              <SelectField
+                value={form.zone}
+                onChange={(value) => setField("zone", value)}
+                options={zoneOptions}
+                placeholder={form.city ? "Select zone" : "Select a city first"}
                 required
               />
             </Field>
@@ -297,23 +318,21 @@ export default function RestaurantsPage() {
                 required
               />
             </Field>
+            <Field label="Owner email" required error={errors.email}>
+              <TextInput
+                type="email"
+                value={form.email}
+                onChange={(value) => setField("email", value)}
+                placeholder="owner@restaurant.com"
+                required
+              />
+            </Field>
             <div className="sm:col-span-2">
               <Field label="Pickup address" required error={errors.address}>
                 <TextInput
                   value={form.address}
                   onChange={(value) => setField("address", value)}
                   placeholder="Street, unit, landmark"
-                  required
-                />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Owner email" required error={errors.email}>
-                <TextInput
-                  type="email"
-                  value={form.email}
-                  onChange={(value) => setField("email", value)}
-                  placeholder="owner@restaurant.com"
                   required
                 />
               </Field>

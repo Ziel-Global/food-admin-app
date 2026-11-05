@@ -6,6 +6,7 @@ export type Partner = {
   owner: string;
   cuisine: string;
   city: string;
+  zone: string;
   status: PartnerStatus;
   orders: string;
   rate: string;
@@ -19,7 +20,7 @@ export type Partner = {
   gmv: string;
 };
 
-const STORAGE_KEY = "crave.partners.v2";
+const STORAGE_KEY = "crave.partners.v3";
 
 /** Platform default when a partner has no override */
 export const PLATFORM_COMMISSION_DEFAULT = 20;
@@ -37,13 +38,50 @@ export const cuisineOptions = [
   { value: "Other", label: "Other" },
 ];
 
+/** Launch cities — zones/districts nest underneath each city */
 export const cityOptions = [
   { value: "Central City", label: "Central City" },
-  { value: "North District", label: "North District" },
-  { value: "South District", label: "South District" },
-  { value: "West District", label: "West District" },
-  { value: "East District", label: "East District" },
+  { value: "Harbor Town", label: "Harbor Town" },
 ];
+
+export const zonesByCity: Record<string, { value: string; label: string }[]> = {
+  "Central City": [
+    { value: "Central", label: "Central" },
+    { value: "North", label: "North" },
+    { value: "South", label: "South" },
+    { value: "West", label: "West" },
+    { value: "East", label: "East" },
+  ],
+  "Harbor Town": [
+    { value: "Central", label: "Central" },
+    { value: "North", label: "North" },
+    { value: "Waterfront", label: "Waterfront" },
+    { value: "Old Port", label: "Old Port" },
+  ],
+};
+
+export function zonesForCity(city: string) {
+  return zonesByCity[city] ?? [];
+}
+
+export function formatLocation(city: string, zone?: string) {
+  if (!city) return "—";
+  if (!zone) return city;
+  return `${city} · ${zone}`;
+}
+
+/** Normalize older saved partners that only had a flat city/district string */
+export function normalizePartnerLocation(partner: Partner): Partner {
+  if (partner.zone) return partner;
+  const legacy = partner.city;
+  if (legacy.endsWith(" District")) {
+    const zone = legacy.replace(/ District$/, "");
+    return { ...partner, city: "Central City", zone };
+  }
+  if (legacy === "Central City") return { ...partner, zone: "Central" };
+  const zones = zonesForCity(legacy);
+  return { ...partner, zone: zones[0]?.value ?? "Central" };
+}
 
 export const statusOptions = [
   { value: "Pending", label: "Pending review" },
@@ -58,12 +96,13 @@ export const seedPartners: Partner[] = [
     owner: "Mina Patel",
     cuisine: "Mediterranean",
     city: "Central City",
+    zone: "Central",
     status: "Active",
     orders: "148",
     rate: "18%",
     phone: "+1 555 0142",
     email: "mina@oliveandthyme.com",
-    address: "18 Market Street, Central City",
+    address: "18 Market Street, Central",
     notes: "Preferred pickup at rear alley after 8pm.",
     hours: "11:00 – 23:00",
     joined: "Mar 2025",
@@ -75,13 +114,14 @@ export const seedPartners: Partner[] = [
     name: "Northside Grill",
     owner: "Ethan Brooks",
     cuisine: "American",
-    city: "North District",
+    city: "Central City",
+    zone: "North",
     status: "Active",
     orders: "122",
     rate: "20%",
     phone: "+1 555 0198",
     email: "ethan@northsidegrill.com",
-    address: "402 North Avenue, North District",
+    address: "402 North Avenue, North",
     notes: "Busy lunch rush — keep dispatch radius tight.",
     hours: "10:00 – 22:00",
     joined: "Jan 2025",
@@ -94,12 +134,13 @@ export const seedPartners: Partner[] = [
     owner: "Amira Hassan",
     cuisine: "South Asian",
     city: "Central City",
+    zone: "Central",
     status: "Pending",
     orders: "—",
     rate: "20%",
     phone: "+1 555 0111",
     email: "amira@saffronhouse.com",
-    address: "7 Spice Lane, Central City",
+    address: "7 Spice Lane, Central",
     notes: "Awaiting kitchen hygiene certificate.",
     hours: "12:00 – 00:00",
     joined: "Oct 2026",
@@ -111,13 +152,14 @@ export const seedPartners: Partner[] = [
     name: "Green Bowl Co.",
     owner: "Leo Martin",
     cuisine: "Healthy",
-    city: "West District",
+    city: "Central City",
+    zone: "West",
     status: "Pending",
     orders: "—",
     rate: "20%",
     phone: "+1 555 0166",
     email: "leo@greenbowl.co",
-    address: "90 Willow Road, West District",
+    address: "90 Willow Road, West",
     notes: "Menu photos pending brand review.",
     hours: "09:00 – 21:00",
     joined: "Oct 2026",
@@ -129,13 +171,14 @@ export const seedPartners: Partner[] = [
     name: "Red Crust Pizza",
     owner: "Sofia Rossi",
     cuisine: "Italian",
-    city: "South District",
+    city: "Central City",
+    zone: "South",
     status: "Paused",
     orders: "54",
     rate: "22%",
     phone: "+1 555 0177",
     email: "sofia@redcrust.com",
-    address: "221 Oven Court, South District",
+    address: "221 Oven Court, South",
     notes: "Paused for oven maintenance — resume Friday.",
     hours: "12:00 – 23:30",
     joined: "Jun 2025",
@@ -204,12 +247,12 @@ function writeOverrides(partners: Partner[]) {
 }
 
 export function loadPartners(): Partner[] {
-  const overrides = readOverrides();
+  const overrides = readOverrides().map(normalizePartnerLocation);
   if (!overrides.length) return [...seedPartners];
 
   const byId = new Map<string, Partner>();
   for (const partner of seedPartners) byId.set(partner.id, partner);
-  for (const partner of overrides) byId.set(partner.id, partner);
+  for (const partner of overrides) byId.set(partner.id, normalizePartnerLocation(partner));
   return Array.from(byId.values()).sort((a, b) => {
     const aSeed = seedPartners.findIndex((p) => p.id === a.id);
     const bSeed = seedPartners.findIndex((p) => p.id === b.id);

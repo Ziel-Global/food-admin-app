@@ -26,12 +26,14 @@ import {
   cuisineOptions,
   estimatedCommission,
   formatCommission,
+  formatLocation,
   getPartner,
   initials,
   parseCommission,
   recentOrdersByRestaurant,
   statusOptions,
   upsertPartner,
+  zonesForCity,
   type Partner,
   type PartnerStatus,
 } from "@/lib/restaurants";
@@ -209,7 +211,7 @@ export default function RestaurantDetailClient({ id }: { id: string }) {
               <Badge label={partner.status} />
             </div>
             <p className="mt-2 text-[13px] text-muted">
-              {partner.cuisine} · {partner.city} · Owner {partner.owner}
+              {partner.cuisine} · {formatLocation(partner.city, partner.zone)} · Owner {partner.owner}
             </p>
           </div>
         </div>
@@ -267,7 +269,7 @@ export default function RestaurantDetailClient({ id }: { id: string }) {
                 {[
                   { label: "Owner / manager", value: partner.owner },
                   { label: "Cuisine", value: partner.cuisine },
-                  { label: "City / zone", value: partner.city },
+                  { label: "City / zone", value: formatLocation(partner.city, partner.zone) },
                   { label: "Service hours", value: partner.hours },
                   { label: "Phone", value: partner.phone },
                   { label: "Email", value: partner.email },
@@ -422,22 +424,36 @@ export default function RestaurantDetailClient({ id }: { id: string }) {
               <Field label="City" required>
                 <SelectField
                   value={form.city}
-                  onChange={(value) => setField("city", value)}
+                  onChange={(value) => {
+                    const zones = zonesForCity(value);
+                    setForm((current) =>
+                      current
+                        ? { ...current, city: value, zone: zones[0]?.value ?? "" }
+                        : current,
+                    );
+                  }}
                   options={cityOptions}
+                  required
+                />
+              </Field>
+              <Field label="Zone / district" required hint="Sub-area under the selected city">
+                <SelectField
+                  value={form.zone}
+                  onChange={(value) => setField("zone", value)}
+                  options={zonesForCity(form.city)}
+                  placeholder={form.city ? "Select zone" : "Select a city first"}
                   required
                 />
               </Field>
               <Field label="Phone" required>
                 <TextInput type="tel" value={form.phone} onChange={(value) => setField("phone", value)} required />
               </Field>
+              <Field label="Owner email" required>
+                <TextInput type="email" value={form.email} onChange={(value) => setField("email", value)} required />
+              </Field>
               <div className="sm:col-span-2">
                 <Field label="Pickup address" required>
                   <TextInput value={form.address} onChange={(value) => setField("address", value)} required />
-                </Field>
-              </div>
-              <div className="sm:col-span-2">
-                <Field label="Owner email" required>
-                  <TextInput type="email" value={form.email} onChange={(value) => setField("email", value)} required />
                 </Field>
               </div>
             </FormSection>
