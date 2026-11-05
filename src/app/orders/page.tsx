@@ -86,20 +86,6 @@ export default function OrdersPage() {
                     <Icons.eye size={14} />
                     Details
                   </button>
-                  {order.status === "Placed" ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOrders((current) =>
-                          current.map((item) => (item.id === order.id ? { ...item, rider: "Dispatching" } : item)),
-                        )
-                      }
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-ink px-3 text-[12px] font-bold text-lime shadow-[0_6px_16px_rgba(17,17,17,0.18)] transition hover:bg-charcoal-soft"
-                    >
-                      <Icons.send size={13} />
-                      Dispatch
-                    </button>
-                  ) : null}
                 </div>
               </TableCell>
             </tr>

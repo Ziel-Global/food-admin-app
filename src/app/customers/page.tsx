@@ -1,24 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, Badge, Button, Notice, PageTitle, Panel, SearchBox, StatCard, Table, TableCell } from "@/components/ui";
-
-const users = [
-  { name: "Maya Chen", phone: "+1 ••• ••• 4108", orders: "42", spent: "36,820", joined: "Jun 12, 2026", status: "Active" },
-  { name: "Noah Williams", phone: "+1 ••• ••• 8821", orders: "18", spent: "14,540", joined: "Jul 04, 2026", status: "Active" },
-  { name: "Amira Khan", phone: "+1 ••• ••• 2907", orders: "64", spent: "52,100", joined: "Apr 18, 2026", status: "Active" },
-  { name: "Luca Moretti", phone: "+1 ••• ••• 6731", orders: "3", spent: "2,810", joined: "Oct 20, 2026", status: "Blocked" },
-];
+import { initials, listCustomers, upsertCustomer, type Customer } from "@/lib/customers";
 
 export default function CustomersPage() {
-  const [rows, setRows] = useState(users);
+  const [rows, setRows] = useState<Customer[]>([]);
   const [notice, setNotice] = useState("");
 
-  function toggle(name: string) {
-    setRows((items) =>
-      items.map((item) => (item.name === name ? { ...item, status: item.status === "Active" ? "Blocked" : "Active" } : item)),
-    );
-    setNotice(`${name} access updated in this preview.`);
+  useEffect(() => {
+    setRows(listCustomers());
+  }, []);
+
+  function toggle(id: string) {
+    setRows((items) => {
+      const next = items.map((item) =>
+        item.id === id ? { ...item, status: item.status === "Active" ? ("Blocked" as const) : ("Active" as const) } : item,
+      );
+      const updated = next.find((item) => item.id === id);
+      if (updated) {
+        upsertCustomer(updated);
+        setNotice(`${updated.name} access updated in this preview.`);
+      }
+      return next;
+    });
   }
 
   return (
@@ -40,10 +45,10 @@ export default function CustomersPage() {
       <Panel title="Customer directory" description="Contact details are masked in this preview" action={<SearchBox placeholder="Name, phone, or ID…" />}>
         <Table headers={["Customer", "Phone", "Orders", "Order value", "Joined", "Status", ""]}>
           {rows.map((row) => (
-            <tr key={row.name} className="transition hover:bg-surface/70">
+            <tr key={row.id} className="transition hover:bg-surface/70">
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <Avatar initials={row.name.split(" ").map((x) => x[0]).join("")} />
+                  <Avatar initials={initials(row.name)} />
                   <span className="font-bold text-ink">{row.name}</span>
                 </div>
               </TableCell>
@@ -57,9 +62,14 @@ export default function CustomersPage() {
                 <Badge label={row.status} />
               </TableCell>
               <TableCell>
-                <Button variant={row.status === "Active" ? "danger" : "secondary"} onClick={() => toggle(row.name)}>
-                  {row.status === "Active" ? "Block" : "Unblock"}
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="secondary" href={`/customers/${row.id}`}>
+                    View
+                  </Button>
+                  <Button variant={row.status === "Active" ? "danger" : "secondary"} onClick={() => toggle(row.id)}>
+                    {row.status === "Active" ? "Block" : "Unblock"}
+                  </Button>
+                </div>
               </TableCell>
             </tr>
           ))}
