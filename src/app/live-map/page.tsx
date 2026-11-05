@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, PageTitle, Panel, Person, SearchBox, StatCard } from "@/components/ui";
+import { Badge, Button, PageTitle, Panel, Person, SearchBox, SelectField, StatCard } from "@/components/ui";
 import { Icons } from "@/components/icons";
 
 const riders = [
@@ -10,6 +10,8 @@ const riders = [
   { name: "Jules Park", order: "Available", zone: "Central · online 18 min", initials: "JP", status: "Active" },
   { name: "Mika Shah", order: "Available", zone: "West · online 32 min", initials: "MS", status: "Active" },
 ];
+
+const zoneOptions = ["All zones", "Central", "North", "West"];
 
 export default function LiveMapPage() {
   const [zone, setZone] = useState("All zones");
@@ -21,17 +23,14 @@ export default function LiveMapPage() {
         title="Live map"
         description="View active riders and deliveries across service zones."
         action={
-          <div className="flex gap-2">
-            <select
+          <div className="flex items-center gap-2">
+            <SelectField
               value={zone}
-              onChange={(e) => setZone(e.target.value)}
-              className="rounded-xl border border-line bg-card px-3 text-[12px] outline-none"
-            >
-              <option>All zones</option>
-              <option>Central</option>
-              <option>North</option>
-              <option>West</option>
-            </select>
+              onChange={setZone}
+              options={zoneOptions}
+              size="sm"
+              className="w-[150px]"
+            />
             <Button variant="secondary">Refresh ⟳</Button>
           </div>
         }

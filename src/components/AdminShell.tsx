@@ -90,7 +90,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (pathname === "/login") return <>{children}</>;
 
-  const current = navigation.find((item) => item.href === pathname);
+  const current = navigation.find((item) =>
+    item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
   const unreadCount = notifications.length;
 
   return (
@@ -144,7 +146,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="sidebar-scroll mt-4 flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3" aria-label="Admin navigation">
           {navigation.map((item) => {
-            const active = pathname === item.href;
+            const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             return (
               <div key={item.href}>
@@ -189,18 +191,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        {/* Status */}
-        <div className="mx-3 mb-2 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-3.5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex size-2">
-              <span className="absolute inset-0 animate-ping rounded-full bg-lime/50" />
-              <span className="relative size-2 rounded-full bg-lime" />
-            </span>
-            <span className="text-[11px] font-semibold tracking-tight">Operations live</span>
-          </div>
-          <ApiHealth />
-        </div>
 
         {/* User */}
         <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
@@ -423,20 +413,3 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ApiHealth() {
-  const [state, setState] = useState<"checking" | "online" | "offline">("checking");
-  useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
-    fetch(`${base.replace(/\/$/, "")}/health`)
-      .then((response) => setState(response.ok ? "online" : "offline"))
-      .catch(() => setState("offline"));
-  }, []);
-  return (
-    <p className="mt-2 text-[10px] leading-4 text-white/35">
-      API{" "}
-      <span className={state === "online" ? "text-lime" : state === "offline" ? "text-orange" : "text-white/50"}>
-        {state === "checking" ? "checking…" : state === "online" ? "connected" : "not connected"}
-      </span>
-    </p>
-  );
-}

@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { Badge, Button, Metric, PageTitle, Panel, Person, Table, TableCell } from "@/components/ui";
+import { useState } from "react";
+import { Badge, Button, Metric, PageTitle, Panel, Person, SelectField, Table, TableCell } from "@/components/ui";
 import { Icons } from "@/components/icons";
 
 const orders = [
@@ -9,8 +12,11 @@ const orders = [
   { id: "FD-2045", customer: "Luca Moretti", restaurant: "Olive & Thyme", status: "Delivered", time: "21 min ago", total: "1,540" },
 ];
 const bars = [38, 54, 45, 74, 58, 87, 68];
+const rangeOptions = ["Last 7 days", "Today", "This month"];
 
 export default function AdminOverview() {
+  const [range, setRange] = useState("Last 7 days");
+
   return (
     <div className="space-y-7">
       <PageTitle
@@ -50,11 +56,13 @@ export default function AdminOverview() {
           title="Order volume"
           description="Orders placed across the network"
           action={
-            <select className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] text-muted outline-none">
-              <option>Last 7 days</option>
-              <option>Today</option>
-              <option>This month</option>
-            </select>
+            <SelectField
+              value={range}
+              onChange={setRange}
+              options={rangeOptions}
+              size="sm"
+              className="w-[150px]"
+            />
           }
         >
           <div className="px-5 pb-5 pt-4 sm:px-6">

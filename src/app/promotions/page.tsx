@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Notice, PageTitle, Panel, StatCard, Table, TableCell } from "@/components/ui";
+import { Badge, Button, Notice, PageTitle, Panel, SelectField, StatCard, Table, TableCell } from "@/components/ui";
 
 type Promotion = { code: string; description: string; type: string; value: string; uses: string; status: "Active" | "Paused" };
 
@@ -58,18 +58,12 @@ export default function PromotionsPage() {
               className="mt-2 h-11 w-full rounded-xl border border-line-strong bg-surface px-3 text-[13px] uppercase outline-none focus:border-ink"
             />
           </label>
-          <label className="text-[12px] font-bold text-ink">
-            Discount type
-            <select
-              value={kind}
-              onChange={(e) => setKind(e.target.value)}
-              className="mt-2 h-11 w-full rounded-xl border border-line-strong bg-card px-3 text-[13px] outline-none"
-            >
-              <option>Percentage</option>
-              <option>Fixed amount</option>
-              <option>Free delivery</option>
-            </select>
-          </label>
+          <SelectField
+            label="Discount type"
+            value={kind}
+            onChange={setKind}
+            options={["Percentage", "Fixed amount", "Free delivery"]}
+          />
           <Button type="submit">Add promotion</Button>
         </form>
       ) : null}
