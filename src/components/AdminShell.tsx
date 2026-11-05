@@ -17,6 +17,7 @@ const navigation = [
   { label: "Promotions", href: "/promotions", icon: Icons.promotions },
   { label: "Payouts", href: "/payouts", icon: Icons.payouts },
   { label: "Support", href: "/support", icon: Icons.support, group: "Platform" },
+  { label: "Audit logs", href: "/audit-logs", icon: Icons.audit },
   { label: "Settings", href: "/settings", icon: Icons.settings },
 ];
 

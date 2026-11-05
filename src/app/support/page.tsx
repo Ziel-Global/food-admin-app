@@ -155,6 +155,16 @@ const resolutionOptions = [
   { value: "No action required", label: "No action required" },
 ];
 
+const careAgents = [
+  { value: "Alex Morgan", label: "Alex Morgan · Super admin" },
+  { value: "Jordan Lee", label: "Jordan Lee · Care lead" },
+  { value: "Priya Shah", label: "Priya Shah · Care agent" },
+  { value: "Chris Nguyen", label: "Chris Nguyen · Care agent" },
+  { value: "Sam Okonkwo", label: "Sam Okonkwo · Escalations" },
+];
+
+const CURRENT_AGENT = "Alex Morgan";
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -175,6 +185,7 @@ export default function SupportPage() {
   const [notice, setNotice] = useState("");
   const [comment, setComment] = useState("");
   const [resolution, setResolution] = useState("Refund issued");
+  const [assignee, setAssignee] = useState(CURRENT_AGENT);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -185,10 +196,14 @@ export default function SupportPage() {
   const selected = rows.find((row) => row.id === selectedId) ?? null;
 
   function openTicket(id: string) {
+    const ticket = rows.find((row) => row.id === id);
     setSelectedId(id);
     setComment("");
     setError("");
     setResolution("Refund issued");
+    setAssignee(
+      ticket && ticket.assigned !== "Unassigned" ? ticket.assigned : CURRENT_AGENT,
+    );
   }
 
   function closeTicket() {
@@ -303,23 +318,34 @@ export default function SupportPage() {
     }, 220);
   }
 
-  function assignToMe() {
-    if (!selected) return;
+  function assignTicket(agent: string) {
+    if (!selected || busy) return;
+    if (!agent) {
+      setError("Pick a care agent to assign.");
+      return;
+    }
+    if (selected.assigned === agent) {
+      setNotice(`${selected.id} is already assigned to ${agent}.`);
+      return;
+    }
+    const nextStatus: TicketStatus = selected.status === "Open" ? "In progress" : selected.status;
     updateTicket(
       selected.id,
       (ticket) =>
         addAgentComment(
           {
             ...ticket,
-            assigned: "Alex Morgan",
-            status: ticket.status === "Open" ? "In progress" : ticket.status,
+            assigned: agent,
+            status: nextStatus,
           },
-          "Assigned to Alex Morgan.",
-          ticket.status === "Open" ? "In progress" : ticket.status,
-          "Alex Morgan",
+          agent === CURRENT_AGENT ? `Assigned to ${agent} (you).` : `Assigned to ${agent}.`,
+          nextStatus,
+          agent,
         ),
-      `${selected.id} assigned to you.`,
+      agent === CURRENT_AGENT ? `${selected.id} assigned to you.` : `${selected.id} assigned to ${agent}.`,
     );
+    setAssignee(agent);
+    setError("");
   }
 
   return (
@@ -430,10 +456,30 @@ export default function SupportPage() {
                     <p className="mt-1 font-bold text-ink">{selected.category}</p>
                   </div>
                 </div>
-                {selected.assigned === "Unassigned" && selected.status !== "Resolved" ? (
-                  <Button className="mt-4 w-full" variant="secondary" onClick={assignToMe} disabled={busy}>
-                    Assign to me
-                  </Button>
+                {selected.status !== "Resolved" ? (
+                  <div className="mt-4 space-y-2">
+                    <Field label="Assign to" hint="Care team member who owns this ticket">
+                      <SelectField value={assignee} onChange={setAssignee} options={careAgents} />
+                    </Field>
+                    {assignee === CURRENT_AGENT ? (
+                      <Button
+                        className="w-full"
+                        variant="secondary"
+                        disabled={busy || selected.assigned === CURRENT_AGENT}
+                        onClick={() => assignTicket(CURRENT_AGENT)}
+                      >
+                        Assign to me
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        disabled={busy || !assignee || selected.assigned === assignee}
+                        onClick={() => assignTicket(assignee)}
+                      >
+                        Assign
+                      </Button>
+                    )}
+                  </div>
                 ) : null}
               </div>
             </div>

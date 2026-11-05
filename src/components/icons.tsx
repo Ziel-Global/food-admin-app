@@ -162,4 +162,11 @@ export const Icons = {
       <path d="M12 4v12M7 11l5 5 5-5M5 20h14" />
     </Svg>
   ),
+  audit: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M8 6h13M8 12h13M8 18h13" />
+      <path d="M3 6h.01M3 12h.01M3 18h.01" />
+      <path d="M14 16l2 2 4-4" />
+    </Svg>
+  ),
 };

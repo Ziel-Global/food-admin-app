@@ -125,6 +125,9 @@ const tones: Record<string, string> = {
   Cancelled: "bg-[#fcebea] text-[#ad5752]",
   "In progress": "bg-[#eaf1ff] text-[#506a9f]",
   "On delivery": "bg-[#fff3e6] text-[#a76225]",
+  Success: "bg-lime-soft text-ink",
+  Failed: "bg-[#fcebea] text-[#ad5752]",
+  Warning: "bg-[#fff3e6] text-[#a76225]",
 };
 
 export function Badge({ label }: { label: string }) {
